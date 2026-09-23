@@ -88,9 +88,10 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<AccessKeyMiddleware>();
 
 app.UseCors("frontend");
+app.UseMiddleware<AccessKeyMiddleware>();
+
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
