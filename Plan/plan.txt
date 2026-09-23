@@ -1,0 +1,1879 @@
+# Xây dựng Web App Upload File → Gmail bằng ASP.NET Core + React
+
+## 1. Vai trò
+
+Bạn là Senior Full-stack Engineer, có kinh nghiệm với:
+
+* ASP.NET Core / .NET 8+
+* C#
+* Gmail API
+* Google OAuth 2.0
+* React
+* Vite
+* TypeScript
+* REST API
+* Security
+* Responsive UI/UX
+* Clean Architecture ở mức phù hợp với project nhỏ
+
+Hãy xây dựng một web application hoàn chỉnh từ thư mục project hiện tại.
+
+Project hiện tại **chỉ mới có file OAuth Client JSON được tải từ Google Cloud**, chưa có source code nào khác.
+
+Không được giả định rằng project đã có backend/frontend.
+
+---
+
+# 2. Mục tiêu sản phẩm
+
+Xây dựng một web app có chức năng:
+
+> Người dùng mở website → chọn một hoặc nhiều file ảnh/PDF → xem trước file → nhập thông tin email nếu cần → bấm "Gửi" → backend nhận file → gửi toàn bộ file đó đến một Gmail cố định thông qua Gmail API.
+
+Luồng tổng quát:
+
+```text
+User
+  ↓
+React Web App
+  ↓
+ASP.NET Core Web API
+  ↓
+Google Gmail API
+  ↓
+Gmail cố định
+```
+
+Không sử dụng Zalo.
+
+Không cần database cho MVP.
+
+Không sử dụng SMTP.
+
+Không sử dụng S3.
+
+Không sử dụng Redis.
+
+Không sử dụng RabbitMQ.
+
+Không lưu file lâu dài trên server.
+
+---
+
+# 3. Công nghệ bắt buộc
+
+## Backend
+
+* .NET 8 hoặc phiên bản LTS phù hợp
+* ASP.NET Core Web API
+* C#
+* Gmail API
+* Google.Apis.Gmail.v1
+* Google.Apis.Auth
+* OAuth 2.0
+* Multipart/form-data
+* Async/await
+* CancellationToken
+* ILogger
+* Options pattern cho configuration
+
+## Frontend
+
+* React
+* TypeScript
+* Vite
+* CSS hiện đại hoặc Tailwind nếu phù hợp với design skill
+* Không dùng framework UI nặng nếu không cần thiết
+
+## Gmail OAuth scope
+
+Chỉ sử dụng:
+
+```text
+https://www.googleapis.com/auth/gmail.send
+```
+
+Không xin các scope:
+
+```text
+https://mail.google.com/
+gmail.readonly
+gmail.modify
+gmail.compose
+gmail.metadata
+```
+
+Chỉ xin quyền tối thiểu cần thiết để gửi email.
+
+---
+
+# 4. Frontend design skill
+
+Trước khi bắt đầu xây UI, nếu môi trường coding agent có các skill sau thì PHẢI sử dụng chúng:
+
+```text
+design-taste-frontend
+frontend-design
+```
+
+Hãy thực hiện theo workflow tương đương:
+
+```text
+Use skill: design-taste-frontend
+Use skill: frontend-design
+```
+
+Nếu CLI/agent yêu cầu cú pháp cụ thể để invoke skill thì hãy dùng đúng cú pháp của môi trường.
+
+Mục tiêu là UI phải được thiết kế dựa trên các skill này, không tạo một giao diện CRUD mặc định.
+
+---
+
+# 5. Định hướng UI/UX
+
+Thiết kế giao diện theo hướng:
+
+> Minimal file transfer dashboard
+
+Không làm UI quá phức tạp.
+
+Ưu tiên:
+
+* sạch
+* hiện đại
+* dễ hiểu
+* responsive
+* mobile-first
+* thao tác upload nhanh
+* trạng thái rõ ràng
+* có drag & drop
+* preview file
+* feedback khi upload
+* feedback khi gửi Gmail
+* loading state
+* error state
+* success state
+
+Không dùng quá nhiều animation.
+
+Không dùng gradient quá mức.
+
+Không dùng quá nhiều màu.
+
+Không làm giao diện giống admin dashboard truyền thống.
+
+---
+
+# 6. Frontend layout
+
+Trang chính nên có cấu trúc:
+
+```text
+------------------------------------------------
+Header
+  Logo / App name
+  Connection status
+------------------------------------------------
+
+Main content
+
+        Gửi tài liệu qua Gmail
+
+  Chọn hoặc kéo thả file vào đây
+
+  ┌──────────────────────────────┐
+  │                              │
+  │       Upload area            │
+  │                              │
+  │  Kéo file vào đây            │
+  │  hoặc                       │
+  │  [ Chọn file ]               │
+  │                              │
+  └──────────────────────────────┘
+
+  Danh sách file đã chọn
+
+  ┌──────────────────────────────┐
+  │ image.jpg       2.4 MB   X   │
+  │ document.pdf    1.2 MB   X   │
+  └──────────────────────────────┘
+
+  [ Xóa tất cả ]
+
+  Thông tin email
+
+  Người nhận:
+  [ fixed@gmail.com ]
+
+  Tiêu đề:
+  [ File gửi từ Web App ]
+
+  Nội dung:
+  [ Các file được gửi từ web app ]
+
+  [ GỬI FILE ]
+
+------------------------------------------------
+Footer
+------------------------------------------------
+```
+
+Địa chỉ email người nhận nếu là email cố định thì không nhất thiết cho user sửa.
+
+Backend phải là nơi quyết định recipient thực tế.
+
+Frontend không được phép tự quyết định email đích nếu backend yêu cầu email cố định.
+
+---
+
+# 7. Upload UX
+
+Hỗ trợ:
+
+* click chọn file
+* drag & drop
+* chọn nhiều file
+* kéo nhiều file cùng lúc
+* xóa từng file
+* xóa tất cả
+
+File hợp lệ:
+
+```text
+.jpg
+.jpeg
+.png
+.webp
+.pdf
+```
+
+Có thể mở rộng thêm sau.
+
+Giới hạn file:
+
+```text
+MAX_FILE_SIZE_MB = 20
+```
+
+Tổng dung lượng request cũng phải được giới hạn hợp lý.
+
+Không được chỉ kiểm tra extension.
+
+Backend phải kiểm tra:
+
+* extension
+* Content-Type
+* magic bytes/file signature nếu phù hợp
+
+---
+
+# 8. Preview
+
+Đối với image:
+
+* hiển thị thumbnail
+* click để xem preview lớn
+* hiển thị filename
+* hiển thị size
+
+Đối với PDF:
+
+* hiển thị icon PDF
+* filename
+* size
+
+Không cần render toàn bộ PDF ở MVP.
+
+---
+
+# 9. Frontend validation
+
+Trước khi gửi:
+
+* không có file → disable submit
+* file quá lớn → báo lỗi
+* extension không hỗ trợ → báo lỗi
+* tổng dung lượng vượt giới hạn → báo lỗi
+* duplicate file → xử lý rõ ràng
+* đang gửi → không cho submit lần nữa
+
+Error message phải dễ hiểu bằng tiếng Việt.
+
+Ví dụ:
+
+```text
+File "abc.exe" không được hỗ trợ.
+
+File "document.pdf" vượt quá giới hạn 20 MB.
+
+Vui lòng chọn ít nhất một file.
+```
+
+---
+
+# 10. Backend architecture
+
+Tạo solution có cấu trúc rõ ràng.
+
+Đề xuất:
+
+```text
+FileGmail/
+│
+├── FileGmail.sln
+│
+├── src/
+│   └── FileGmail.Api/
+│       │
+│       ├── Controllers/
+│       │   ├── GmailController.cs
+│       │   └── HealthController.cs
+│       │
+│       ├── Services/
+│       │   ├── GmailService.cs
+│       │   ├── GmailOAuthService.cs
+│       │   └── EmailMessageBuilder.cs
+│       │
+│       ├── Models/
+│       │   ├── SendEmailRequest.cs
+│       │   └── ApiResponse.cs
+│       │
+│       ├── Options/
+│       │   ├── GmailOptions.cs
+│       │   └── FileUploadOptions.cs
+│       │
+│       ├── Validators/
+│       │   └── FileValidator.cs
+│       │
+│       ├── Middleware/
+│       │   └── ExceptionHandlingMiddleware.cs
+│       │
+│       ├── Program.cs
+│       ├── appsettings.json
+│       ├── appsettings.Development.json
+│       └── FileGmail.Api.csproj
+│
+└── frontend/
+    └── file-gmail-web/
+        ├── src/
+        │   ├── components/
+        │   ├── pages/
+        │   ├── services/
+        │   ├── types/
+        │   ├── hooks/
+        │   ├── utils/
+        │   ├── App.tsx
+        │   └── main.tsx
+        ├── package.json
+        └── vite.config.ts
+```
+
+Có thể thay đổi structure nếu có lý do kỹ thuật rõ ràng.
+
+Không over-engineer.
+
+---
+
+# 11. Configuration
+
+Không hard-code:
+
+* Gmail address
+* client secret
+* client ID
+* refresh token
+* OAuth secret
+* API secret
+* file size limit
+
+Sử dụng configuration/environment variables.
+
+Ví dụ:
+
+```json
+{
+  "Gmail": {
+    "CredentialsPath": "credentials.json",
+    "TokenPath": "token.json",
+    "SenderEmail": "",
+    "RecipientEmail": ""
+  },
+  "FileUpload": {
+    "MaxFileSizeMb": 20,
+    "MaxTotalSizeMb": 25
+  }
+}
+```
+
+Nhưng secret thật phải được lấy từ environment variables hoặc secret storage khi deploy.
+
+---
+
+# 12. OAuth credentials
+
+File OAuth JSON hiện tại đã được tải từ Google Cloud.
+
+KHÔNG commit file này lên Git.
+
+Đổi tên thành:
+
+```text
+credentials.json
+```
+
+Thêm vào:
+
+```text
+.gitignore
+```
+
+```gitignore
+credentials.json
+token.json
+.env
+*.env
+```
+
+Nếu deploy Render:
+
+* không phụ thuộc vào file local
+* thiết kế configuration để có thể sử dụng environment variable/secret phù hợp
+* không expose credential ra frontend
+
+---
+
+# 13. Gmail OAuth flow
+
+Backend cần hỗ trợ OAuth 2.0.
+
+Scope:
+
+```text
+https://www.googleapis.com/auth/gmail.send
+```
+
+Flow:
+
+```text
+GET /api/gmail/auth
+        ↓
+Google OAuth authorization
+        ↓
+User login
+        ↓
+Google consent
+        ↓
+GET /api/gmail/oauth/callback
+        ↓
+Exchange authorization code
+        ↓
+Save token
+```
+
+Sau khi có refresh token:
+
+```text
+Frontend
+   ↓
+POST /api/gmail/send
+   ↓
+GmailService
+   ↓
+Google Gmail API
+```
+
+Backend không yêu cầu user đăng nhập Google mỗi lần gửi.
+
+---
+
+# 14. OAuth security
+
+Không đưa:
+
+```text
+client_secret
+refresh_token
+access_token
+credentials.json
+```
+
+ra frontend.
+
+Không trả token trong API response.
+
+Không log token.
+
+Không log credentials.
+
+Không log Authorization header.
+
+Không commit token.
+
+---
+
+# 15. Gmail send API
+
+Backend phải tạo MIME email hợp lệ.
+
+Email phải hỗ trợ:
+
+```text
+From
+To
+Subject
+Body
+Attachments
+```
+
+Attachments:
+
+* JPG
+* JPEG
+* PNG
+* WEBP
+* PDF
+
+Có thể gửi nhiều attachment trong một email.
+
+Ví dụ:
+
+```text
+POST /api/gmail/send
+Content-Type: multipart/form-data
+```
+
+Form fields:
+
+```text
+files
+subject
+body
+```
+
+Recipient lấy từ backend configuration.
+
+Không tin recipient do frontend gửi lên.
+
+---
+
+# 16. API contract
+
+## Health
+
+```http
+GET /api/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+## OAuth status
+
+```http
+GET /api/gmail/status
+```
+
+Response:
+
+```json
+{
+  "authorized": true
+}
+```
+
+Nếu chưa OAuth:
+
+```json
+{
+  "authorized": false
+}
+```
+
+---
+
+## Start OAuth
+
+```http
+GET /api/gmail/auth
+```
+
+Redirect user sang Google.
+
+---
+
+## OAuth callback
+
+```http
+GET /api/gmail/oauth/callback
+```
+
+Sau khi thành công redirect về frontend:
+
+```text
+/
+```
+
+hoặc:
+
+```text
+/?gmailAuthorized=true
+```
+
+Không expose token.
+
+---
+
+## Send email
+
+```http
+POST /api/gmail/send
+```
+
+Content-Type:
+
+```text
+multipart/form-data
+```
+
+Fields:
+
+```text
+files
+subject
+body
+```
+
+Response success:
+
+```json
+{
+  "success": true,
+  "message": "Đã gửi email thành công."
+}
+```
+
+Response failure:
+
+```json
+{
+  "success": false,
+  "message": "Không thể gửi email."
+}
+```
+
+Không trả stack trace cho client.
+
+---
+
+# 17. File handling
+
+Không lưu file permanent.
+
+Ưu tiên:
+
+```text
+IFormFile
+   ↓
+MemoryStream / temporary stream
+   ↓
+MIME message
+   ↓
+Gmail API
+```
+
+Không tạo database.
+
+Không upload lên cloud storage.
+
+Sau khi gửi xong:
+
+```text
+file stream
+   ↓
+dispose
+```
+
+Nếu phải sử dụng temporary file vì giới hạn memory thì:
+
+* tạo temp file
+* xử lý
+* xóa ngay sau khi gửi
+* xử lý cả trường hợp exception
+
+Không để file người dùng tồn tại lâu trên server.
+
+---
+
+# 18. Security
+
+Đây là web public nên phải có protection cơ bản.
+
+Implement ít nhất:
+
+### CORS
+
+Chỉ cho phép frontend domain được cấu hình.
+
+Không dùng:
+
+```text
+AllowAnyOrigin()
+```
+
+trong production.
+
+### Rate limiting
+
+Giới hạn request gửi email.
+
+Ví dụ:
+
+```text
+10 requests / minute / IP
+```
+
+Giá trị có thể configuration.
+
+### Request size limit
+
+Giới hạn multipart request.
+
+### File validation
+
+Validate:
+
+* extension
+* MIME
+* size
+* magic bytes nếu phù hợp
+
+### Error handling
+
+Không expose:
+
+* stack trace
+* filesystem path
+* Google credentials
+* OAuth token
+* internal exception details
+
+---
+
+# 19. Authentication cho web app
+
+Vì endpoint gửi email có thể bị public abuse, cần có một lớp bảo vệ đơn giản.
+
+MVP có thể dùng:
+
+```text
+APP_ACCESS_KEY
+```
+
+Frontend có một màn hình:
+
+```text
+Nhập mã truy cập
+
+[****************]
+
+[ Vào ứng dụng ]
+```
+
+Backend kiểm tra access key.
+
+Không lưu access key hard-code trong frontend.
+
+Có thể gửi bằng header:
+
+```http
+X-App-Key: ...
+```
+
+Backend lấy giá trị đúng từ environment variable.
+
+Nếu triển khai authentication đầy đủ thì có thể thay thế bằng JWT sau, nhưng không cần over-engineer MVP.
+
+---
+
+# 20. Gmail authorization page
+
+Frontend cần có trạng thái:
+
+```text
+Gmail:
+● Đã kết nối
+```
+
+hoặc:
+
+```text
+Gmail:
+○ Chưa kết nối
+
+[ Kết nối Gmail ]
+```
+
+Nếu backend chưa có OAuth token:
+
+```text
+Chưa kết nối Gmail.
+Vui lòng kết nối Gmail trước khi gửi file.
+```
+
+Nút:
+
+```text
+Kết nối Gmail
+```
+
+gọi:
+
+```text
+GET /api/gmail/auth
+```
+
+---
+
+# 21. Email UI
+
+Cho phép nhập:
+
+### Subject
+
+Default:
+
+```text
+File gửi từ Web App
+```
+
+### Body
+
+Default:
+
+```text
+Các file được gửi từ Web App.
+```
+
+Recipient:
+
+```text
+email@example.com
+```
+
+nhưng nếu là fixed recipient thì chỉ hiển thị dạng readonly:
+
+```text
+Người nhận
+email@example.com
+```
+
+Không cho frontend thay đổi recipient backend.
+
+---
+
+# 22. Sending state
+
+Khi đang gửi:
+
+```text
+Đang gửi...
+```
+
+Disable:
+
+* upload
+* submit
+* remove file nếu cần
+
+Có progress UI nếu có thể.
+
+Sau khi thành công:
+
+```text
+✓ Đã gửi thành công
+
+3 file đã được gửi đến Gmail.
+```
+
+Sau khi thành công:
+
+* clear files
+* reset form nếu phù hợp
+
+---
+
+# 23. Error handling UX
+
+Các trường hợp:
+
+### Gmail chưa authorized
+
+```text
+Gmail chưa được kết nối.
+Vui lòng kết nối Gmail trước.
+```
+
+### File quá lớn
+
+```text
+Tổng dung lượng file vượt quá giới hạn cho phép.
+```
+
+### Gmail API lỗi
+
+```text
+Không thể gửi email lúc này.
+Vui lòng thử lại sau.
+```
+
+### Network error
+
+```text
+Không thể kết nối đến máy chủ.
+Vui lòng kiểm tra kết nối mạng.
+```
+
+### Rate limit
+
+```text
+Bạn đang gửi quá nhiều yêu cầu.
+Vui lòng thử lại sau ít phút.
+```
+
+Không hiển thị exception thô.
+
+---
+
+# 24. Responsive
+
+Phải hoạt động tốt trên:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+Mobile layout:
+
+```text
+Header
+
+Title
+
+Upload box
+
+File list
+
+Email information
+
+Send button
+```
+
+Nút gửi phải dễ bấm trên mobile.
+
+---
+
+# 25. Accessibility
+
+Implement:
+
+* semantic HTML
+* button có accessible label
+* input label
+* keyboard navigation
+* focus state
+* sufficient contrast
+* aria-label cho icon-only button
+* không dùng màu sắc làm tín hiệu duy nhất
+
+---
+
+# 26. Frontend component structure
+
+Tối thiểu:
+
+```text
+components/
+├── Header.tsx
+├── FileDropzone.tsx
+├── FileList.tsx
+├── FileItem.tsx
+├── ImagePreview.tsx
+├── EmailForm.tsx
+├── SendButton.tsx
+├── GmailStatus.tsx
+├── AccessKeyForm.tsx
+├── Toast.tsx
+└── LoadingState.tsx
+```
+
+Không viết toàn bộ UI trong một App.tsx.
+
+---
+
+# 27. API client
+
+Tạo:
+
+```text
+src/services/api.ts
+src/services/gmailApi.ts
+```
+
+Không gọi fetch trực tiếp rải rác trong component.
+
+API URL lấy từ environment:
+
+```text
+VITE_API_BASE_URL
+```
+
+---
+
+# 28. TypeScript types
+
+Tạo type rõ ràng:
+
+```ts
+interface GmailStatus {
+  authorized: boolean;
+}
+
+interface SendEmailResponse {
+  success: boolean;
+  message: string;
+}
+
+interface SelectedFile {
+  file: File;
+  id: string;
+  previewUrl?: string;
+}
+```
+
+Không dùng:
+
+```ts
+any
+```
+
+nếu không cần thiết.
+
+---
+
+# 29. Object URL cleanup
+
+Nếu dùng:
+
+```ts
+URL.createObjectURL(file)
+```
+
+phải revoke:
+
+```ts
+URL.revokeObjectURL(url)
+```
+
+tránh memory leak.
+
+---
+
+# 30. Backend coding rules
+
+Tuân thủ:
+
+* nullable reference types
+* null check
+* async I/O
+* CancellationToken
+* dependency injection
+* Options pattern
+* ILogger
+* no magic strings nếu có thể configuration
+* no query/database vì MVP không có DB
+* không block thread
+* không dùng `.Result`
+* không dùng `.Wait()`
+
+Không viết:
+
+```csharp
+var result = SomeAsync().Result;
+```
+
+---
+
+# 31. Exception handling
+
+Tạo global exception handling.
+
+Response production:
+
+```json
+{
+  "success": false,
+  "message": "Đã xảy ra lỗi. Vui lòng thử lại."
+}
+```
+
+Development có thể log đầy đủ server-side.
+
+Client không được nhận stack trace.
+
+---
+
+# 32. Logging
+
+Log các event:
+
+```text
+OAuth started
+OAuth completed
+Gmail authorization status
+Email send started
+Email send completed
+Email send failed
+File validation failed
+Rate limit triggered
+```
+
+Không log:
+
+```text
+access_token
+refresh_token
+client_secret
+credentials JSON
+file contents
+```
+
+---
+
+# 33. Gmail MIME implementation
+
+Tạo email MIME multipart/mixed.
+
+Ví dụ conceptual:
+
+```text
+Content-Type: multipart/mixed
+
+--boundary
+Content-Type: text/plain
+
+Email body
+
+--boundary
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="document.pdf"
+Content-Transfer-Encoding: base64
+
+...
+
+--boundary
+Content-Type: image/jpeg
+Content-Disposition: attachment; filename="image.jpg"
+Content-Transfer-Encoding: base64
+
+...
+```
+
+Encode thành base64url phù hợp với Gmail API.
+
+Không tự tạo MIME implementation quá mong manh nếu Google library hỗ trợ tốt hơn.
+
+---
+
+# 34. Gmail API service
+
+Tạo interface:
+
+```csharp
+public interface IGmailService
+{
+    Task SendEmailAsync(
+        IEnumerable<IFormFile> files,
+        string subject,
+        string body,
+        CancellationToken cancellationToken);
+}
+```
+
+Implementation:
+
+```text
+GmailService
+```
+
+Responsibility:
+
+* lấy authorized Gmail client
+* build MIME message
+* attach files
+* send via Gmail API
+* log result
+
+OAuth responsibility tách riêng:
+
+```text
+GmailOAuthService
+```
+
+---
+
+# 35. Do not over-engineer
+
+Không tạo:
+
+* Repository
+* UnitOfWork
+* MediatR
+* CQRS
+* Entity Framework
+* database
+* Redis
+* RabbitMQ
+* microservices
+
+cho MVP này.
+
+Project nhỏ cần code dễ hiểu, dễ deploy, dễ maintain.
+
+---
+
+# 36. Environment variables
+
+Backend:
+
+```text
+GMAIL_CREDENTIALS_JSON
+GMAIL_TOKEN_JSON
+GMAIL_SENDER_EMAIL
+GMAIL_RECIPIENT_EMAIL
+APP_ACCESS_KEY
+ALLOWED_ORIGINS
+MAX_FILE_SIZE_MB
+MAX_TOTAL_SIZE_MB
+```
+
+Nếu dùng file path local thì vẫn hỗ trợ:
+
+```text
+GMAIL_CREDENTIALS_PATH
+GMAIL_TOKEN_PATH
+```
+
+Production nên ưu tiên secrets/environment.
+
+---
+
+# 37. Local development
+
+README phải hướng dẫn:
+
+```bash
+dotnet restore
+dotnet run
+```
+
+Frontend:
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+# 38. CORS local
+
+Frontend local:
+
+```text
+http://localhost:5173
+```
+
+Backend:
+
+```text
+https://localhost:xxxx
+```
+
+Cấu hình CORS để frontend gọi backend.
+
+Không dùng wildcard production.
+
+---
+
+# 39. Deployment
+
+Thiết kế để deploy:
+
+### Backend
+
+Render Web Service.
+
+### Frontend
+
+Render Static Site.
+
+Hoặc frontend có thể deploy trên Vercel/Netlify.
+
+Không phụ thuộc filesystem persistent.
+
+Không phụ thuộc background worker để email gửi sau.
+
+Request gửi email phải hoàn tất trong request hiện tại.
+
+---
+
+# 40. Render considerations
+
+Backend phải phù hợp free hosting:
+
+* stateless
+* không cần persistent filesystem
+* không cần Docker nếu không cần
+* không SMTP
+* sử dụng Gmail API HTTPS
+* không giữ process/background worker lâu dài
+* không phụ thuộc server luôn chạy
+
+Nếu token cần persistent storage trên Render, phải thiết kế cách lưu secret/token phù hợp.
+
+Không giả định filesystem của Render là persistent.
+
+---
+
+# 41. Testing
+
+Tạo test tối thiểu cho:
+
+### FileValidator
+
+Test:
+
+* JPG valid
+* PNG valid
+* PDF valid
+* unsupported extension
+* oversized file
+* invalid MIME
+
+### EmailMessageBuilder
+
+Test:
+
+* subject
+* body
+* attachment
+* multiple attachments
+
+### API
+
+Test:
+
+```text
+GET /api/health
+GET /api/gmail/status
+```
+
+Test unauthorized send.
+
+Test invalid files.
+
+---
+
+# 42. README
+
+README phải có:
+
+```text
+1. Project overview
+2. Architecture
+3. Requirements
+4. Google Cloud setup
+5. Gmail API setup
+6. OAuth consent setup
+7. OAuth Client setup
+8. Local configuration
+9. credentials.json placement
+10. First OAuth authorization
+11. Running backend
+12. Running frontend
+13. Sending first email
+14. Environment variables
+15. Security notes
+16. Deployment Render
+17. Troubleshooting
+```
+
+Đặc biệt giải thích:
+
+```text
+credentials.json
+```
+
+không được commit.
+
+---
+
+# 43. Google Cloud setup documentation
+
+README phải hướng dẫn:
+
+1. Tạo Google Cloud project.
+2. Enable Gmail API.
+3. Configure OAuth consent screen.
+4. Thêm scope:
+
+```text
+https://www.googleapis.com/auth/gmail.send
+```
+
+5. Thêm test user nếu OAuth app đang ở Testing.
+6. Tạo OAuth Client ID.
+7. Application type:
+
+```text
+Web application
+```
+
+8. Cấu hình redirect URI.
+
+Không hướng dẫn sử dụng Service Account cho Gmail cá nhân.
+
+---
+
+# 44. OAuth redirect URI
+
+Backend phải có configurable:
+
+```text
+GoogleOAuth:RedirectUri
+```
+
+Ví dụ local:
+
+```text
+https://localhost:7001/api/gmail/oauth/callback
+```
+
+Production:
+
+```text
+https://your-backend.onrender.com/api/gmail/oauth/callback
+```
+
+Không hard-code production URL.
+
+README phải chỉ rõ URL nào cần thêm vào Google Cloud Authorized redirect URIs.
+
+---
+
+# 45. First-run OAuth
+
+Khi chạy lần đầu:
+
+```text
+GET /api/gmail/auth
+```
+
+Nếu chưa authorized:
+
+```text
+Redirect → Google
+```
+
+Sau khi consent:
+
+```text
+Google
+ ↓
+callback
+ ↓
+token
+```
+
+Frontend hiển thị:
+
+```text
+Gmail đã kết nối.
+```
+
+---
+
+# 46. Token handling
+
+Access token có thời hạn.
+
+Refresh token phải được sử dụng để tự động lấy access token mới.
+
+Không yêu cầu user authorize mỗi lần gửi.
+
+Nếu refresh token invalid/revoked:
+
+```text
+authorized = false
+```
+
+Frontend hướng dẫn:
+
+```text
+Vui lòng kết nối lại Gmail.
+```
+
+---
+
+# 47. Important Gmail constraint
+
+Không giả định rằng Gmail cho phép gửi file vô hạn.
+
+Có giới hạn về:
+
+* message size
+* attachment size
+* quota
+* rate limit
+
+Backend phải bắt lỗi Gmail API và trả message thân thiện.
+
+Không retry vô hạn.
+
+---
+
+# 48. User experience khi gửi
+
+Ví dụ:
+
+```text
+3 files selected
+
+image-1.jpg
+image-2.jpg
+report.pdf
+
+                    [ GỬI 3 FILE ]
+
+↓ click
+
+Đang chuẩn bị email...
+
+Đang gửi...
+
+✓ Gửi thành công
+
+Email đã được gửi.
+```
+
+---
+
+# 49. Empty state
+
+Khi chưa có file:
+
+```text
+Chưa có file nào
+
+Kéo thả ảnh hoặc PDF vào đây
+hoặc chọn file từ thiết bị
+```
+
+---
+
+# 50. Design direction
+
+Sử dụng design skills để quyết định:
+
+* typography
+* spacing
+* border radius
+* shadows
+* layout
+* responsive breakpoint
+* button treatment
+* empty state
+* status colors
+* file cards
+* upload dropzone
+
+Không copy một template dashboard phổ biến.
+
+UI phải có visual hierarchy rõ ràng.
+
+Primary CTA:
+
+```text
+Gửi file
+```
+
+Secondary actions:
+
+```text
+Chọn file
+Xóa
+Kết nối Gmail
+```
+
+---
+
+# 51. Frontend states
+
+Phải thiết kế đầy đủ:
+
+```text
+Initial
+Empty
+Files selected
+Validation error
+Gmail disconnected
+Gmail connected
+Sending
+Success
+Error
+Network error
+```
+
+Không chỉ thiết kế happy path.
+
+---
+
+# 52. Icons
+
+Có thể sử dụng một icon library nhẹ nếu design skill đề xuất.
+
+Ví dụ:
+
+* upload
+* file
+* image
+* PDF
+* trash
+* check
+* alert
+* mail
+* loader
+
+Không dùng emoji làm icon chính của UI.
+
+---
+
+# 53. Final implementation quality
+
+Sau khi xây dựng:
+
+1. Build backend.
+2. Build frontend.
+3. Fix compile errors.
+4. Fix TypeScript errors.
+5. Fix lint errors.
+6. Kiểm tra API.
+7. Kiểm tra OAuth flow.
+8. Kiểm tra gửi email text.
+9. Kiểm tra gửi PDF.
+10. Kiểm tra gửi image.
+11. Kiểm tra nhiều attachment.
+12. Kiểm tra file invalid.
+13. Kiểm tra file quá lớn.
+14. Kiểm tra Gmail chưa authorize.
+15. Kiểm tra mobile layout.
+
+Không được dừng ở việc tạo skeleton.
+
+Project phải chạy được.
+
+---
+
+# 54. Development order
+
+Thực hiện theo thứ tự:
+
+## Phase 1
+
+Khởi tạo:
+
+```text
+ASP.NET Core API
+React/Vite frontend
+```
+
+## Phase 2
+
+Gmail OAuth:
+
+```text
+credentials
+OAuth
+callback
+token
+status
+```
+
+## Phase 3
+
+Gmail send:
+
+```text
+text email
+attachment
+multiple attachments
+```
+
+## Phase 4
+
+File validation.
+
+## Phase 5
+
+REST API hoàn chỉnh.
+
+## Phase 6
+
+Frontend upload.
+
+## Phase 7
+
+Frontend Gmail status.
+
+## Phase 8
+
+Frontend sending UX.
+
+## Phase 9
+
+Security.
+
+## Phase 10
+
+Testing.
+
+## Phase 11
+
+README.
+
+## Phase 12
+
+Deployment configuration.
+
+---
+
+# 55. Important implementation rule
+
+Không tự ý tạo giải pháp khác với kiến trúc trên nếu không có lý do kỹ thuật.
+
+Nếu phát hiện một vấn đề liên quan đến:
+
+* Gmail OAuth
+* Gmail API
+* Render
+* OAuth redirect
+* file size
+* MIME
+* browser security
+
+hãy giải thích vấn đề và chọn giải pháp đơn giản nhất phù hợp với MVP.
+
+Không thêm infrastructure chỉ để giải quyết một vấn đề nhỏ.
+
+---
+
+# 56. Output expected from coding agent
+
+Sau khi hoàn thành phải báo cáo:
+
+```text
+## Created
+
+Backend:
+- ...
+
+Frontend:
+- ...
+
+## Features
+
+- ...
+- ...
+
+## Gmail OAuth
+
+- ...
+
+## API
+
+- ...
+
+## Security
+
+- ...
+
+## Run locally
+
+Backend:
+...
+
+Frontend:
+...
+
+## First-time setup
+
+...
+
+## Deployment
+
+...
+
+## Remaining manual steps
+
+...
+```
+
+Quan trọng:
+
+Nếu còn bước nào cần user thực hiện trên Google Cloud Console thì phải liệt kê chính xác.
+
+Không nói "đã hoàn tất" nếu thực tế vẫn cần user cấu hình Google Cloud.
+
+---
+
+# 57. Start now
+
+Bắt đầu bằng việc:
+
+1. Kiểm tra thư mục hiện tại.
+2. Xác định file OAuth JSON hiện có.
+3. Không đọc hoặc in client secret ra terminal/output.
+4. Đổi tên/copy file thành:
+
+```text
+credentials.json
+```
+
+5. Tạo `.gitignore`.
+6. Khởi tạo solution.
+7. Tạo backend.
+8. Tạo frontend.
+9. Cài dependencies.
+10. Sau đó triển khai từng phase theo thứ tự ở trên.
+
+Không hỏi lại những thông tin đã có trong yêu cầu.
+
+Nếu cần một giá trị chưa biết, sử dụng placeholder rõ ràng:
+
+```text
+YOUR_GMAIL_ADDRESS
+YOUR_FRONTEND_URL
+YOUR_BACKEND_URL
+```
+
+và ghi lại trong README.
+
+Không tự bịa credentials, email hoặc URL.

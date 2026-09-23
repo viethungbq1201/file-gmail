@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FileGmail.Api/FileGmail.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileGmail.Tests/FileGmail.Tests.csproj" />
+  </Folder>
+</Solution>

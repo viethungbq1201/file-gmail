@@ -1,0 +1,33 @@
+# OAuth & credentials
+credentials.json
+token.json
+
+# Environment
+.env
+*.env
+*.env.local
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# IDEs
+.vscode/
+.idea/
+
+# Publish / build output
+publish/
+*.pfx
+*.key
+
+# Misc
+.DS_Store
+*.log
