@@ -1,0 +1,39 @@
+services:
+  filegmail:
+    build: .
+    container_name: filegmail
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      GMAIL_SENDER_EMAIL: ${GMAIL_SENDER_EMAIL}
+      GMAIL_RECIPIENT_EMAIL: ${GMAIL_RECIPIENT_EMAIL}
+      GMAIL_REDIRECT_URI: ${GMAIL_REDIRECT_URI}
+      GMAIL_FRONTEND_URL: ${GMAIL_FRONTEND_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      APP_ACCESS_KEY: ${APP_ACCESS_KEY}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-10}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-20}
+      MAX_TOTAL_SIZE_MB: ${MAX_TOTAL_SIZE_MB:-25}
+    volumes:
+      - ./data/credentials.json:/app/credentials.json:ro
+      - ./data/token.json:/app/token.json
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: filegmail-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - filegmail
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,11 +1,13 @@
 # OAuth & credentials
 credentials.json
 token.json
+data/
 
 # Environment
 .env
 *.env
 *.env.local
+.env.example
 
 # .NET
 bin/
