@@ -26,7 +26,8 @@ public class AccessKeyMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (RequiresAccessKey(context.Request.Path))
+        var isPreflight = HttpMethods.IsOptions(context.Request.Method);
+        if (!isPreflight && RequiresAccessKey(context.Request.Path))
         {
             if (!IsAuthorized(context))
             {
