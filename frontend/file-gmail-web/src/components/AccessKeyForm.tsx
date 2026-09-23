@@ -19,9 +19,10 @@ export function AccessKeyForm({ onSuccess }: AccessKeyFormProps) {
 
     setSubmitting(true);
     setError(null);
+    const trimmedKey = key.trim();
+    setAppKey(trimmedKey);
     try {
       await verifyAccessKey();
-      setAppKey(key.trim());
       onSuccess();
     } catch (err) {
       const message =
