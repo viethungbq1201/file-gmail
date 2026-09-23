@@ -13,7 +13,7 @@ export function Toast({ message, type, onClose }: ToastProps) {
 
   return (
     <div
-      className="toast fixed bottom-4 left-1/2 z-50 flex max-w-[calc(100vw-32px)] items-center gap-3 bg-(--surface) text-(--text)"
+      className="toast fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50 flex w-max max-w-[calc(100vw-32px)] items-center gap-3 bg-(--surface) text-(--text)"
       role="status"
       aria-live="polite"
     >
@@ -22,10 +22,10 @@ export function Toast({ message, type, onClose }: ToastProps) {
       ) : (
         <XCircle size={20} className="shrink-0 text-(--error)" aria-hidden="true" />
       )}
-      <p className="text-sm">{message}</p>
+      <p className="text-sm font-medium">{message}</p>
       <button
         type="button"
-        className="btn btn-ghost btn-sm ml-2 shrink-0"
+        className="btn btn-ghost btn-sm ml-1 h-8 w-8 shrink-0 p-0 focusable"
         onClick={onClose}
         aria-label="Đóng thông báo"
       >

@@ -23,25 +23,27 @@ export function FileList({
   if (files.length === 0) return null;
 
   return (
-    <section aria-label="Danh sách file đã chọn">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-[13px] font-semibold text-(--text)">
-          {files.length} file đã chọn
-          <span className="mono ml-2 font-normal text-(--text-3)">
+    <section aria-label="Danh sách file đã chọn" className="flex flex-col gap-2">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-semibold text-(--text)">
+            {files.length} tệp đã chọn
+          </span>
+          <span className="mono rounded bg-(--surface-2) px-2 py-0.5 text-[11px] font-normal text-(--text-2)">
             {formatBytes(totalSize)}
           </span>
-        </p>
+        </div>
         <button
           type="button"
-          className="btn btn-ghost btn-sm focusable"
+          className="btn btn-ghost btn-sm text-[12px] text-(--text-2) transition-colors hover:text-(--error) focusable sm:text-[13px]"
           onClick={onClearAll}
           disabled={disabled}
         >
-          <TrashSimple size={15} />
-          Xoá tất cả
+          <TrashSimple size={14} className="sm:size-[15px]" />
+          <span>Xoá tất cả</span>
         </button>
       </div>
-      <ul className="card divide-y divide-(--border)">
+      <ul className="card divide-y divide-(--border) overflow-hidden">
         {files.map((item) => (
           <FileItem
             key={item.id}

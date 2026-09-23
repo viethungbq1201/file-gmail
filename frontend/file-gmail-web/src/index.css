@@ -78,25 +78,33 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(8px);
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .app-main {
     width: 100%;
     max-width: 560px;
     margin-inline: auto;
-    padding: 28px 16px 64px;
+    padding: 20px 16px 48px;
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 20px;
   }
 
+  @media (min-width: 640px) {
+    .app-main {
+      padding: 28px 20px 64px;
+    }
+  }
+
   .app-footer {
     border-top: 1px solid var(--border);
-    padding: 16px;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     text-align: center;
     font-size: 12px;
     color: var(--text-3);
@@ -113,6 +121,12 @@
     padding: 16px;
   }
 
+  @media (min-width: 640px) {
+    .card-pad {
+      padding: 20px;
+    }
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -126,6 +140,10 @@
     height: 44px;
     cursor: pointer;
     border: 1px solid transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition:
       background-color 0.2s ease,
       border-color 0.2s ease,
@@ -180,10 +198,15 @@
 
   .btn-danger {
     background: transparent;
-    color: var(--text-2);
+    color: var(--text-3);
     padding: 0;
-    height: 32px;
-    width: 32px;
+    height: 38px;
+    width: 38px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .btn-danger:hover:not(:disabled) {
@@ -197,12 +220,12 @@
 
   .btn-sm {
     height: 36px;
-    padding: 0 16px;
+    padding: 0 14px;
     font-size: 13px;
   }
 
   .btn-lg {
-    height: 50px;
+    height: 48px;
     padding: 0 28px;
     font-size: 15px;
   }
@@ -222,10 +245,19 @@
     border: 1px solid var(--border-strong);
     border-radius: 8px;
     padding: 10px 12px;
-    font-size: 14px;
+    /* Font size 16px on mobile prevents iOS Safari auto-zooming */
+    font-size: 16px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition:
       border-color 0.2s ease,
       box-shadow 0.2s ease;
+  }
+
+  @media (min-width: 640px) {
+    .input {
+      font-size: 14px;
+    }
   }
 
   .input::placeholder {
@@ -247,7 +279,7 @@
   .field-group {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
 
   .help-text {
@@ -268,12 +300,25 @@
     border: 1.5px dashed var(--border-strong);
     border-radius: 12px;
     background: var(--surface);
-    padding: 36px 20px;
+    padding: 24px 16px;
     text-align: center;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition:
       border-color 0.2s ease,
-      background-color 0.2s ease;
+      background-color 0.2s ease,
+      transform 0.1s ease;
+  }
+
+  @media (min-width: 640px) {
+    .dropzone {
+      padding: 36px 20px;
+    }
+  }
+
+  .dropzone:active {
+    transform: scale(0.99);
   }
 
   .dropzone:hover,
@@ -360,6 +405,7 @@
 
   .toast {
     border-radius: 12px;
+    border: 1px solid var(--border);
     padding: 12px 16px;
     font-size: 14px;
     font-weight: 500;

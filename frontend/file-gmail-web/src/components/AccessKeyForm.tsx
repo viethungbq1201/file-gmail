@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { EyeSlash, ShieldCheck, ShieldWarning } from "@phosphor-icons/react";
+import { Eye, EyeSlash, LockKey, ShieldCheck, ShieldWarning } from "@phosphor-icons/react";
 import { ApiError, setAppKey } from "../services/api";
 import { verifyAccessKey } from "../services/gmailApi";
 
@@ -10,6 +10,7 @@ interface AccessKeyFormProps {
 
 export function AccessKeyForm({ onSuccess }: AccessKeyFormProps) {
   const [key, setKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,8 +40,8 @@ export function AccessKeyForm({ onSuccess }: AccessKeyFormProps) {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center px-4">
-      <div className="card card-pad w-full max-w-[400px]">
+    <div className="flex min-h-[100dvh] items-center justify-center p-4">
+      <div className="card card-pad w-full max-w-[420px]">
         <div className="mb-6 flex flex-col items-center text-center">
           <span
             className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-(--accent) text-(--on-accent)"
@@ -48,7 +49,7 @@ export function AccessKeyForm({ onSuccess }: AccessKeyFormProps) {
           >
             <ShieldCheck size={26} weight="bold" />
           </span>
-          <h1 className="text-xl font-bold tracking-tight">Nhập mã truy cập</h1>
+          <h1 className="text-xl font-bold tracking-tight text-(--text)">Nhập mã truy cập</h1>
           <p className="mt-1 text-sm text-(--text-2)">
             Nhập mã truy cập để sử dụng ứng dụng gửi tài liệu.
           </p>
@@ -64,12 +65,12 @@ export function AccessKeyForm({ onSuccess }: AccessKeyFormProps) {
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--text-3)"
                 aria-hidden="true"
               >
-                <EyeSlash size={18} />
+                <LockKey size={18} />
               </span>
               <input
                 id="access-key"
-                type="password"
-                className="input pl-10"
+                type={showKey ? "text" : "password"}
+                className="input pl-10 pr-10"
                 value={key}
                 onChange={(event) => setKey(event.target.value)}
                 placeholder="Nhập mã truy cập"
@@ -77,6 +78,15 @@ export function AccessKeyForm({ onSuccess }: AccessKeyFormProps) {
                 autoFocus
                 required
               />
+              <button
+                type="button"
+                className="btn btn-ghost absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-(--text-3) hover:text-(--text) focusable"
+                onClick={() => setShowKey((prev) => !prev)}
+                aria-label={showKey ? "Ẩn mã truy cập" : "Hiện mã truy cập"}
+                tabIndex={-1}
+              >
+                {showKey ? <EyeSlash size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

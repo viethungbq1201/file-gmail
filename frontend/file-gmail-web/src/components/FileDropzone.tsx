@@ -69,16 +69,21 @@ export function FileDropzone({ onFiles, disabled }: FileDropzoneProps) {
         tabIndex={-1}
       />
       <span
-        className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-(--accent-soft) text-(--accent)"
+        className="mx-auto mb-2.5 flex h-11 w-11 items-center justify-center rounded-full bg-(--accent-soft) text-(--accent) sm:mb-3 sm:h-12 sm:w-12"
         aria-hidden="true"
       >
-        <UploadSimple size={24} weight="bold" />
+        <UploadSimple size={22} weight="bold" className="sm:size-6" />
       </span>
-      <p className="text-[15px] font-semibold text-(--text)">Chọn hoặc kéo thả file vào đây</p>
-      <p className="mt-1 text-[13px] text-(--text-2)">
-        Hỗ trợ ảnh JPG, PNG, WEBP và PDF · tối đa 20 MB/file · tổng tối đa 25 MB
+      <p className="text-[14px] font-semibold text-(--text) sm:text-[15px]">
+        <span className="hidden sm:inline">Kéo thả file vào đây hoặc nhấn để chọn</span>
+        <span className="sm:hidden">Chạm để chọn file hoặc chụp ảnh</span>
       </p>
-      <span className="btn btn-secondary btn-sm mt-4">Chọn file</span>
+      <p className="mx-auto mt-1 max-w-[40ch] text-[12px] text-(--text-2) sm:text-[13px]">
+        Hỗ trợ JPG, PNG, WEBP, PDF · Tối đa 20 MB/file · Tổng 25 MB
+      </p>
+      <span className="btn btn-secondary btn-sm pointer-events-none mt-3.5 px-4 font-medium sm:mt-4">
+        Chọn file từ thiết bị
+      </span>
     </div>
   );
 }

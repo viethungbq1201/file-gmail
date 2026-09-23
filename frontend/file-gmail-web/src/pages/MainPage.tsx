@@ -151,10 +151,10 @@ export function MainPage() {
               <li>
                 <button
                   type="button"
-                  className="mt-1 inline-block rounded text-[13px] font-semibold underline underline-offset-2 focusable"
+                  className="mt-1.5 inline-block rounded text-[13px] font-semibold text-(--error) underline underline-offset-4 transition-opacity hover:opacity-80 focusable"
                   onClick={() => setSelectedErrors([])}
                 >
-                  Bỏ qua
+                  Đã hiểu và bỏ qua
                 </button>
               </li>
             </ul>
