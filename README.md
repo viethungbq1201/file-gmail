@@ -1,6 +1,6 @@
 # FileGmail
 
-Web ứng dụng cho phép người dùng chọn ảnh (JPG/PNG/WEBP) hoặc file PDF, nhập tiêu đề & nội dung, rồi gửi các file đó đến địa chỉ Gmail cố định thông qua Gmail API (chỉ dùng scope `gmail.send`). File không được lưu trữ trên máy chủ — chúng được gửi đi ngay và loại bỏ sau khi hoàn tất.
+Web ứng dụng cho phép người dùng chọn ảnh (JPG/PNG/WEBP), PDF, Word (DOCX) hoặc Excel (XLSX), nhập tiêu đề & nội dung, rồi gửi các file đó đến địa chỉ Gmail cố định thông qua Gmail API (chỉ dùng scope `gmail.send`). File không được lưu trữ trên máy chủ — chúng được gửi đi ngay và loại bỏ sau khi hoàn tất.
 
 ## Kiến trúc
 
@@ -14,7 +14,7 @@ Backend phục vụ luôn bản build tĩnh của frontend (thư mục `wwwroot`
 
 ## Yêu cầu chức năng đã triển khai
 
-- Validate file theo extension + content-type + magic bytes (chặn file giả mạo): chỉ chấp nhận `.jpg/.jpeg/.png/.webp/.pdf`.
+- Validate file theo extension + content-type + magic bytes (chặn file giả mạo): chỉ chấp nhận `.jpg/.jpeg/.png/.webp/.pdf/.docx/.xlsx` (DOCX/XLSX kiểm tra chữ ký ZIP OOXML).
 - Giới hạn kích thước từng file (mặc định 20 MB) và tổng dung lượng (mặc định 25 MB).
 - Email gửi qua Gmail API dạng MIME multipart/mixed tự dựng (subject mã hoá RFC 2047, tên file Unicode qua `filename*=UTF-8''`).
 - Người nhận cố định cấu hình từ máy chủ (`GMAIL_RECIPIENT_EMAIL`), UI hiển thị dạng chỉ đọc.

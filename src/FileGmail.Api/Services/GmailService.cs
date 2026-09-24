@@ -74,7 +74,7 @@ public class GmailService : IGmailService
 
             result.Add(new AttachmentData(
                 file.FileName,
-                FileValidator.GetContentType(file.FileName) ?? "application/octet-stream",
+                FileValidator.GetAllowedContentTypes(file.FileName)?.FirstOrDefault() ?? "application/octet-stream",
                 memoryStream.ToArray()));
         }
 

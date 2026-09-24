@@ -3,7 +3,7 @@ import type { SelectedFile } from "../types/types";
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const MAX_TOTAL_SIZE_BYTES = 25 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".pdf", ".docx", ".xlsx"];
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 
 export interface AddFilesResult {

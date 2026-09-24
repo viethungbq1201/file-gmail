@@ -62,7 +62,7 @@ export function FileDropzone({ onFiles, disabled }: FileDropzoneProps) {
         ref={inputRef}
         type="file"
         className="hidden"
-        accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+        accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx,image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         multiple
         onChange={handleInput}
         disabled={disabled}
@@ -79,7 +79,7 @@ export function FileDropzone({ onFiles, disabled }: FileDropzoneProps) {
         <span className="sm:hidden">Chạm để chọn file hoặc chụp ảnh</span>
       </p>
       <p className="mx-auto mt-1 max-w-[40ch] text-[12px] text-(--text-2) sm:text-[13px]">
-        Hỗ trợ JPG, PNG, WEBP, PDF · Tối đa 20 MB/file · Tổng 25 MB
+        Hỗ trợ JPG, PNG, WEBP, PDF, DOCX, XLSX · Tối đa 20 MB/file · Tổng 25 MB
       </p>
       <span className="btn btn-secondary btn-sm pointer-events-none mt-3.5 px-4 font-medium sm:mt-4">
         Chọn file từ thiết bị

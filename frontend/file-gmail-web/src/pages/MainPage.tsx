@@ -135,7 +135,7 @@ export function MainPage() {
             Gửi tài liệu qua Gmail
           </h1>
           <p className="mx-auto mt-1 max-w-[42ch] text-sm text-(--text-2)">
-            Chọn ảnh hoặc PDF, điền thông tin và gửi trực tiếp về hộp thư cố định.
+            Chọn ảnh, PDF, Word hoặc Excel, điền thông tin và gửi trực tiếp về hộp thư cố định.
           </p>
         </section>
 
@@ -224,7 +224,7 @@ export function MainPage() {
       </main>
 
       <footer className="app-footer">
-        FileGmail · Chỉ nhận ảnh và PDF · File không được lưu trên máy chủ
+        FileGmail · Nhận ảnh (JPG/PNG/WEBP), PDF, DOCX, XLSX · File không được lưu trên máy chủ
       </footer>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

@@ -8,13 +8,25 @@ public sealed record FileValidationResult(bool IsValid, string? ErrorMessage = n
 
 public static class FileValidator
 {
-    private static readonly Dictionary<string, string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string[]> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        [".jpg"] = "image/jpeg",
-        [".jpeg"] = "image/jpeg",
-        [".png"] = "image/png",
-        [".webp"] = "image/webp",
-        [".pdf"] = "application/pdf"
+        [".jpg"] = ["image/jpeg"],
+        [".jpeg"] = ["image/jpeg"],
+        [".png"] = ["image/png"],
+        [".webp"] = ["image/webp"],
+        [".pdf"] = ["application/pdf"],
+        [".docx"] =
+        [
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/octet-stream",
+            "application/x-zip-compressed"
+        ],
+        [".xlsx"] =
+        [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/octet-stream",
+            "application/x-zip-compressed"
+        ]
     };
 
     public static IReadOnlyCollection<string> AllowedExtensions => AllowedTypes.Keys;
@@ -22,8 +34,10 @@ public static class FileValidator
     public static bool IsSupportedExtension(string? fileName) =>
         AllowedTypes.ContainsKey(Path.GetExtension(fileName ?? ""));
 
-    public static string? GetContentType(string? fileName) =>
-        AllowedTypes.TryGetValue(Path.GetExtension(fileName ?? ""), out var contentType) ? contentType : null;
+    public static IReadOnlyCollection<string>? GetAllowedContentTypes(string? fileName) =>
+        AllowedTypes.TryGetValue(Path.GetExtension(fileName ?? ""), out var contentTypes)
+            ? contentTypes
+            : null;
 
     public static FileValidationResult Validate(IFormFileCollection files, FileUploadOptions options)
     {
@@ -85,13 +99,13 @@ public static class FileValidator
 
     private static bool HasValidContentType(IFormFile file, string fileName)
     {
-        var expected = GetContentType(fileName);
-        if (expected is null) return false;
+        var allowedContentTypes = GetAllowedContentTypes(fileName);
+        if (allowedContentTypes is null) return false;
 
         var actual = file.ContentType;
         if (string.IsNullOrWhiteSpace(actual)) return false;
 
-        return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+        return allowedContentTypes.Contains(actual, StringComparer.OrdinalIgnoreCase);
     }
 
     private static bool HasValidSignature(IFormFile file)
@@ -119,6 +133,7 @@ public static class FileValidator
                 ".webp" => MatchesAscii(header, read, "RIFF") && read >= 12 &&
                            header[8] == (byte)'W' && header[9] == (byte)'E' &&
                            header[10] == (byte)'B' && header[11] == (byte)'P',
+                ".docx" or ".xlsx" => Matches(header, read, [0x50, 0x4B, 0x03, 0x04]),
                 _ => false
             };
         }

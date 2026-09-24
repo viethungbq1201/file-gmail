@@ -45,6 +45,30 @@ public class FileValidatorTests
     }
 
     [Fact]
+    public void Validate_ValidDocx_ReturnsValid()
+    {
+        var files = CreateFiles(
+            ("bai-giang.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00 }));
+
+        var result = FileValidator.Validate(files, Options);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void Validate_ValidXlsxFromOctetStream_ReturnsValid()
+    {
+        var files = CreateFiles(
+            ("bang-ke.xlsx", "application/octet-stream",
+                new byte[] { 0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x08, 0x08 }));
+
+        var result = FileValidator.Validate(files, Options);
+
+        Assert.True(result.IsValid);
+    }
+
+    [Fact]
     public void Validate_ValidWebp_ReturnsValid()
     {
         var webpHeader = new byte[12];
