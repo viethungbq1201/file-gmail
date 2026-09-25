@@ -23,6 +23,7 @@ services:
         sync: false
       - key: GMAIL_CREDENTIALS_JSON
         sync: false
+      # GMAIL_TOKEN_JSON chỉ dùng 1 lần để seed DB. Định dạng: {"me":"{...}"}
       - key: GMAIL_TOKEN_JSON
         sync: false
       - key: GMAIL_REDIRECT_URI
@@ -30,4 +31,9 @@ services:
       - key: GMAIL_FRONTEND_URL
         sync: false
       - key: ALLOWED_ORIGINS
+        sync: false
+      # Lưu token vào Supabase để không phải cấu hình tay mỗi lần deploy
+      - key: TOKEN_STORE
+        value: db
+      - key: DATABASE_URL
         sync: false

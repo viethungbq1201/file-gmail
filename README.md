@@ -76,7 +76,7 @@ Chạy trong Production, mọi cấu hình có thể ghi đè bằng biến môi
 |---|---|---|
 | `GMAIL_CREDENTIALS_JSON` | Nội dung JSON credentials (thay cho file) | — |
 | `GMAIL_CREDENTIALS_PATH` | Đường dẫn file credentials | `credentials.json` |
-| `GMAIL_TOKEN_JSON` | Nội dung JSON token (thay cho file) | — |
+| `GMAIL_TOKEN_JSON` | Nội dung JSON token (SEED 1 lần khi DB trống; sau khi seed, không còn cần) | — |
 | `GMAIL_TOKEN_PATH` | Đường dẫn file token | `token.json` |
 | `GMAIL_REDIRECT_URI` | Redirect URI của OAuth | `http://localhost:5244/api/gmail/oauth/callback` |
 | `GMAIL_SENDER_EMAIL` | Địa chỉ gửi (Google account đã cấp quyền) | — |
@@ -87,6 +87,23 @@ Chạy trong Production, mọi cấu hình có thể ghi đè bằng biến môi
 | `MAX_FILE_SIZE_MB` | Dung lượng tối đa mỗi file | `20` |
 | `MAX_TOTAL_SIZE_MB` | Tổng dung lượng tối đa | `25` |
 | `RATE_LIMIT_PER_MINUTE` | Giới hạn yêu cầu `/api/gmail/send` theo IP | `10` |
+| `TOKEN_STORE` | Nơi lưu token: `file` (mặc định) hoặc `db` (Supabase) | `file` |
+| `DATABASE_URL` | Connection string Postgres (bắt buộc khi `TOKEN_STORE=db`) | — |
+
+## Lưu token dùng Supabase (deploy Render, không phải cấu hình tay)
+
+Mặc định token lưu file `token.json` — trên Render container bị mất khi restart. Để token bền qua mọi deploy:
+
+1. Tạo project trên [Supabase](https://supabase.com) → **Settings → Database → Connection string** → lấy URL dạng
+   `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`.
+2. Đặt env trên Render:
+   - `TOKEN_STORE=db`
+   - `DATABASE_URL=<connection string Supabase>`
+   - (giữ `GMAIL_TOKEN_JSON` token hiện tại trong lần deploy đầu để tự seed).
+3. Lần đầu khởi động app sẽ tự tạo bảng `oauth_tokens` và nạp token. Mọi lần refresh token mới **tự ghi vào Supabase** — deploy/restart không mất, không đụng tay env nữa.
+4. Mỗi ~7 ngày (app còn ở chế độ Testing, token bị Google thu hồi) chỉ cần vào web → Kết nối Gmail → đăng nhập 1 lần; token mới tự vào DB.
+
+> **Chú ý:** bảng dùng cột `key` (đã trong nháy đôi), an toàn kể cả khi key token là `me`.
 
 ## API
 

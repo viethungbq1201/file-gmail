@@ -3,6 +3,7 @@ using FileGmail.Api.Middleware;
 using FileGmail.Api.Models;
 using FileGmail.Api.Options;
 using FileGmail.Api.Services;
+using Google.Apis.Util.Store;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
@@ -12,6 +13,7 @@ var gmailOptions = BindOptions<GmailOptions>(builder, GmailOptions.SectionName);
 var fileUploadOptions = BindOptions<FileUploadOptions>(builder, FileUploadOptions.SectionName);
 var rateLimitOptions = BindOptions<RateLimitOptions>(builder, RateLimitOptions.SectionName);
 var securityOptions = BindOptions<SecurityOptions>(builder, SecurityOptions.SectionName);
+var tokenStoreOptions = BindOptions<TokenStoreOptions>(builder, TokenStoreOptions.SectionName);
 
 if (fileUploadOptions.MaxFileSizeMb <= 0 || fileUploadOptions.MaxTotalSizeMb <= 0)
 {
@@ -24,13 +26,24 @@ if (rateLimitOptions.RequestsPerMinute <= 0)
 }
 
 builder.Services.AddSingleton<IOptions<GmailOptions>>(Options.Create(gmailOptions));
-builder.Services.AddSingleton<IOptions<FileUploadOptions>>(Options.Create(fileUploadOptions));
-builder.Services.AddSingleton<IOptions<RateLimitOptions>>(Options.Create(rateLimitOptions));
-builder.Services.AddSingleton<IOptions<SecurityOptions>>(Options.Create(securityOptions));
+    builder.Services.AddSingleton<IOptions<FileUploadOptions>>(Options.Create(fileUploadOptions));
+    builder.Services.AddSingleton<IOptions<RateLimitOptions>>(Options.Create(rateLimitOptions));
+    builder.Services.AddSingleton<IOptions<SecurityOptions>>(Options.Create(securityOptions));
+    builder.Services.AddSingleton<IOptions<TokenStoreOptions>>(Options.Create(tokenStoreOptions));
 
-builder.Services.AddSingleton<JsonTokenDataStore>();
-builder.Services.AddSingleton<GmailOAuthService>();
-builder.Services.AddSingleton<IGmailService, GmailService>();
+    if (tokenStoreOptions.UseDatabase)
+    {
+        builder.Services.AddSingleton<DbTokenDataStore>();
+        builder.Services.AddSingleton<IDataStore>(sp => sp.GetRequiredService<DbTokenDataStore>());
+        builder.Services.AddHostedService<TokenHealthCheckService>();
+    }
+    else
+    {
+        builder.Services.AddSingleton<IDataStore, JsonTokenDataStore>();
+    }
+
+    builder.Services.AddSingleton<GmailOAuthService>();
+    builder.Services.AddSingleton<IGmailService, GmailService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -86,6 +99,11 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 });
 
 var app = builder.Build();
+
+if (tokenStoreOptions.UseDatabase && !string.IsNullOrWhiteSpace(gmailOptions.TokenJson))
+{
+    app.Services.GetRequiredService<DbTokenDataStore>().SeedFromJson(gmailOptions.TokenJson);
+}
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
@@ -156,6 +174,10 @@ static void ApplyEnvironmentOverrides(object options)
         case SecurityOptions security:
             SetIfPresent("APP_ACCESS_KEY", value => security.AccessKey = value);
             SetIfPresent("ALLOWED_ORIGINS", value => security.AllowedOrigins = value);
+            break;
+        case TokenStoreOptions tokenStore:
+            SetIfPresent("TOKEN_STORE", value => tokenStore.Store = value);
+            SetIfPresent("DATABASE_URL", value => tokenStore.DatabaseUrl = value);
             break;
     }
 }

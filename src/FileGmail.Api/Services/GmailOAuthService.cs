@@ -3,6 +3,7 @@ using Google.Apis.Services;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Auth.OAuth2.Responses;
+using Google.Apis.Util.Store;
 using FileGmail.Api.Options;
 using Microsoft.Extensions.Options;
 
@@ -14,14 +15,14 @@ public class GmailOAuthService
     private const string UserId = "me";
 
     private readonly GmailOptions _options;
-    private readonly JsonTokenDataStore _tokenStore;
+    private readonly IDataStore _tokenStore;
     private readonly IHostEnvironment _environment;
     private readonly ILogger<GmailOAuthService> _logger;
     private readonly Lazy<Task<GoogleAuthorizationCodeFlow>> _flowLoader;
 
     public GmailOAuthService(
         IOptions<GmailOptions> options,
-        JsonTokenDataStore tokenStore,
+        IDataStore tokenStore,
         IHostEnvironment environment,
         ILogger<GmailOAuthService> logger)
     {
@@ -88,7 +89,7 @@ public class GmailOAuthService
     }
 
     private Task<TokenResponse?> GetTokenAsync() =>
-        _tokenStore.GetAsync<TokenResponse>(UserId);
+        _tokenStore.GetAsync<TokenResponse?>(UserId);
 
     private async Task<GoogleAuthorizationCodeFlow> CreateFlowAsync()
     {
