@@ -42,4 +42,22 @@ public class DbTokenDataStoreTests
         Assert.NotNull(result);
         Assert.Equal(nested, result["me"]);
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("khong-phai-connection-string")]
+    public void TryValidateConnectionString_Invalid_ReturnsFalse(string connectionString)
+    {
+        Assert.False(DbTokenDataStore.TryValidateConnectionString(connectionString!, out _));
+    }
+
+    [Fact]
+    public void TryValidateConnectionString_DsnLike_ReturnsTrue()
+    {
+        var valid = "Host=aws-0-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.abc;Password=secret;SSL Mode=Require;Trust Server Certificate=true";
+
+        Assert.True(DbTokenDataStore.TryValidateConnectionString(valid, out _));
+    }
 }

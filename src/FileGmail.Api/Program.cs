@@ -34,8 +34,23 @@ builder.Services.AddSingleton<IOptions<GmailOptions>>(Options.Create(gmailOption
     if (tokenStoreOptions.UseDatabase)
     {
         builder.Services.AddSingleton<DbTokenDataStore>();
-        builder.Services.AddSingleton<IDataStore>(sp => sp.GetRequiredService<DbTokenDataStore>());
-        builder.Services.AddHostedService<TokenHealthCheckService>();
+        builder.Services.AddSingleton<IDataStore>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("TokenStore");
+            if (DbTokenDataStore.TryValidateConnectionString(tokenStoreOptions.DatabaseUrl, out var error))
+            {
+                logger.LogInformation("Lưu token Gmail bằng Supabase.");
+                return sp.GetRequiredService<DbTokenDataStore>();
+            }
+
+            logger.LogError("{Error} Token sẽ lưu tạm bằng file (mất khi deploy trên Render).", error);
+            return sp.GetRequiredService<JsonTokenDataStore>();
+        });
+
+        if (DbTokenDataStore.TryValidateConnectionString(tokenStoreOptions.DatabaseUrl, out _))
+        {
+            builder.Services.AddHostedService<TokenHealthCheckService>();
+        }
     }
     else
     {
@@ -100,7 +115,9 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 
 var app = builder.Build();
 
-if (tokenStoreOptions.UseDatabase && !string.IsNullOrWhiteSpace(gmailOptions.TokenJson))
+if (tokenStoreOptions.UseDatabase
+    && !string.IsNullOrWhiteSpace(gmailOptions.TokenJson)
+    && DbTokenDataStore.TryValidateConnectionString(tokenStoreOptions.DatabaseUrl, out _))
 {
     app.Services.GetRequiredService<DbTokenDataStore>().SeedFromJson(gmailOptions.TokenJson);
 }

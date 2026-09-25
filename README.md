@@ -94,8 +94,9 @@ Chạy trong Production, mọi cấu hình có thể ghi đè bằng biến môi
 
 Mặc định token lưu file `token.json` — trên Render container bị mất khi restart. Để token bền qua mọi deploy:
 
-1. Tạo project trên [Supabase](https://supabase.com) → **Settings → Database → Connection string** → lấy URL dạng
-   `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`.
+1. Tạo project trên [Supabase](https://supabase.com) → **Settings → Database → Connection string → “Session pooler”** → lấy URL dạng
+   `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`.
+   (Dùng Session pooler port `5432`, không dùng Transaction pooler `6543` — ví Npgsql chạy 24/7 trên Render cần session ổn định.)
 2. Đặt env trên Render:
    - `TOKEN_STORE=db`
    - `DATABASE_URL=<connection string Supabase>`
