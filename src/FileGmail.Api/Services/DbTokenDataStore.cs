@@ -32,7 +32,7 @@ public sealed class DbTokenDataStore : IDataStore, IDisposable
 
         try
         {
-            using var dataSource = NpgsqlDataSource.Create(connectionString);
+            using var dataSource = NpgsqlDataSource.Create(ToNpgsqlConnectionString(connectionString));
             error = "";
             return true;
         }
@@ -41,6 +41,30 @@ public sealed class DbTokenDataStore : IDataStore, IDisposable
             error = $"DATABASE_URL không hợp lệ: {ex.Message}";
             return false;
         }
+    }
+
+    private static string ToNpgsqlConnectionString(string connectionString)
+    {
+        if (!Uri.TryCreate(connectionString, UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("postgresql" or "postgres"))
+        {
+            return connectionString;
+        }
+
+        var userInfo = uri.UserInfo.Split(':', 2);
+        var builder = new NpgsqlConnectionStringBuilder
+        {
+            Host = uri.Host,
+            Port = uri.Port > 0 ? uri.Port : 5432,
+            Database = uri.AbsolutePath.TrimStart('/') is { Length: > 0 } db ? db : "postgres",
+            Username = Uri.UnescapeDataString(userInfo[0])
+        };
+        if (userInfo.Length > 1)
+        {
+            builder.Password = Uri.UnescapeDataString(userInfo[1]);
+        }
+
+        return builder.ConnectionString;
     }
 
     public async Task ClearAsync()
@@ -162,7 +186,7 @@ public sealed class DbTokenDataStore : IDataStore, IDisposable
 
             try
             {
-                _dataSource = NpgsqlDataSource.Create(_databaseUrl);
+                _dataSource = NpgsqlDataSource.Create(ToNpgsqlConnectionString(_databaseUrl));
             }
             catch (Exception ex)
             {

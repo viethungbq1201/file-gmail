@@ -60,4 +60,12 @@ public class DbTokenDataStoreTests
 
         Assert.True(DbTokenDataStore.TryValidateConnectionString(valid, out _));
     }
+
+    [Fact]
+    public void TryValidateConnectionString_SupabaseUri_ReturnsTrue()
+    {
+        const string uri = "postgresql://postgres.epfdlrnpokvmiuasafug:secret@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres";
+
+        Assert.True(DbTokenDataStore.TryValidateConnectionString(uri, out _));
+    }
 }

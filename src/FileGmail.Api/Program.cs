@@ -31,6 +31,8 @@ builder.Services.AddSingleton<IOptions<GmailOptions>>(Options.Create(gmailOption
     builder.Services.AddSingleton<IOptions<SecurityOptions>>(Options.Create(securityOptions));
     builder.Services.AddSingleton<IOptions<TokenStoreOptions>>(Options.Create(tokenStoreOptions));
 
+    builder.Services.AddSingleton<JsonTokenDataStore>();
+
     if (tokenStoreOptions.UseDatabase)
     {
         builder.Services.AddSingleton<DbTokenDataStore>();
@@ -54,7 +56,7 @@ builder.Services.AddSingleton<IOptions<GmailOptions>>(Options.Create(gmailOption
     }
     else
     {
-        builder.Services.AddSingleton<IDataStore, JsonTokenDataStore>();
+        builder.Services.AddSingleton<IDataStore>(sp => sp.GetRequiredService<JsonTokenDataStore>());
     }
 
     builder.Services.AddSingleton<GmailOAuthService>();
